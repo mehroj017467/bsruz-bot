@@ -1,42 +1,34 @@
 import os
 import asyncio
-import nest_asyncio
-from aiohttp import web
+import threading
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
-# Siz bergan token
+# Tokeningiz
 TOKEN = '8908099059:AAHgf-KtimF4hqhrkfaNCqcaWBOuxHoqBlc'
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Render "Failed" demasligi uchun yengil veb-server
-async def handle(request):
-    return web.Response(text="Bot is running!")
-
-async def start_web_server():
-    app = web.Application()
-    app.add_routes([web.get('/', handle)])
-    runner = web.AppRunner(app)
-    await runner.setup()
-    # Render PORT ni avtomatik beradi, bo'lmasa 8080 ishlatiladi
+# Render uchun oddiy server (hech qanday aiohttp kerak emas)
+def run_server():
     port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-    print(f"Web server started on port {port}")
+    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+    server.serve_forever()
 
-# Bot komandalari (boshqa kodlaringizni shu yerga qo'shishingiz mumkin)
+# Serverni fonda yurgizamiz
+threading.Thread(target=run_server, daemon=True).start()
+
+# Bot komandalari
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Salom! Bot 24/7 rejimda ishga tushdi!")
+    await message.answer("Salom! Bot 24/7 rejimda ishlamoqda.")
 
-# Asosiy ishga tushirish
+# Asosiy funksiya
 async def main():
-    await start_web_server()
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    nest_asyncio.apply()
     asyncio.run(main())
-  
+    
